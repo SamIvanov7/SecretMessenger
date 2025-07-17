@@ -1,0 +1,6 @@
+/* Main CSS file that imports all component styles */
+
+/* Import component styles */
+@import url('components/mobile.css');
+@import url('components/animations.css');
+@import url('components/theme.css');

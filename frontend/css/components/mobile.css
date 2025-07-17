@@ -1,0 +1,86 @@
+/* Mobile-specific styles */
+@media (max-width: 768px) {
+    /* Mobile menu toggle */
+    .mobile-menu-toggle {
+        display: block;
+        position: fixed;
+        top: 16px;
+        left: 16px;
+        z-index: 100;
+        width: 40px;
+        height: 40px;
+        background: var(--bg-secondary);
+        border: none;
+        border-radius: var(--radius);
+        color: var(--text-primary);
+        cursor: pointer;
+    }
+    
+    /* Sidebar overlay */
+    .sidebar-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 9;
+    }
+    
+    .sidebar-overlay.active {
+        display: block;
+    }
+    
+    /* Mobile chat header */
+    .chat-header {
+        padding-left: 60px;
+    }
+    
+    /* Mobile message input */
+    .message-form {
+        padding: 12px 16px;
+    }
+    
+    /* Mobile emoji picker */
+    .emoji-picker {
+        bottom: 100%;
+        right: 16px;
+        left: 16px;
+        max-width: none;
+    }
+    
+    /* Mobile modals */
+    .modal-content {
+        margin: 20px;
+        max-height: calc(100vh - 40px);
+    }
+    
+    /* Mobile file preview */
+    .message-media {
+        max-width: 200px;
+    }
+    
+    /* Mobile typing indicator */
+    .typing-indicator {
+        font-size: 0.75rem;
+    }
+    
+    /* Hide desktop-only elements */
+    .desktop-only {
+        display: none;
+    }
+    
+    /* Show mobile-only elements */
+    .mobile-only {
+        display: block;
+    }
+}
+
+/* Tablet adjustments */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .sidebar {
+        width: 280px;
+    }
+    
+    .message-content {
+        max-width: 80%;
+    }
+}

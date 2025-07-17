@@ -1,0 +1,127 @@
+/* Animations and transitions */
+
+/* Message animations */
+@keyframes messageSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.message {
+    animation: messageSlideIn 0.3s ease-out;
+}
+
+/* Reaction animation */
+@keyframes reactionPop {
+    0% {
+        transform: scale(0);
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.reaction {
+    animation: reactionPop 0.3s ease-out;
+}
+
+/* Loading dots animation */
+@keyframes loadingDots {
+    0%, 20% {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+}
+
+.loading-dots span {
+    animation: loadingDots 1.4s infinite;
+}
+
+.loading-dots span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.loading-dots span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+/* Pulse animation for notifications */
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(88, 101, 242, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(88, 101, 242, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(88, 101, 242, 0);
+    }
+}
+
+.unread-badge {
+    animation: pulse 2s infinite;
+}
+
+/* Fade animations */
+.fade-in {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.fade-out {
+    animation: fadeOut 0.3s ease-out;
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}
+
+/* Skeleton loading animation */
+@keyframes shimmer {
+    0% {
+        background-position: -1000px 0;
+    }
+    100% {
+        background-position: 1000px 0;
+    }
+}
+
+.skeleton {
+    background: linear-gradient(
+        90deg,
+        var(--bg-secondary) 25%,
+        var(--bg-tertiary) 50%,
+        var(--bg-secondary) 75%
+    );
+    background-size: 1000px 100%;
+    animation: shimmer 2s infinite;
+}

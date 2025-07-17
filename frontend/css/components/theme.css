@@ -1,0 +1,199 @@
+/* Theme variations */
+
+/* Light theme */
+@media (prefers-color-scheme: light) {
+    :root {
+        --primary-color: #5865F2;
+        --primary-hover: #4752C4;
+        --secondary-color: #3BA55C;
+        --danger-color: #ED4245;
+        --warning-color: #FAA61A;
+        --bg-primary: #FFFFFF;
+        --bg-secondary: #F2F3F5;
+        --bg-tertiary: #E3E5E8;
+        --bg-message: #F2F3F5;
+        --text-primary: #2E3338;
+        --text-secondary: #747F8D;
+        --text-muted: #96989D;
+        --border-color: #E3E5E8;
+    }
+    
+    /* Light theme adjustments */
+    .message.own .message-bubble {
+        background: var(--primary-color);
+        color: white;
+    }
+    
+    .online-indicator {
+        border-color: var(--bg-primary);
+    }
+    
+    .reaction {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+    }
+    
+    .reaction.own {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+    }
+}
+
+/* High contrast theme */
+@media (prefers-contrast: high) {
+    :root {
+        --text-primary: #FFFFFF;
+        --text-secondary: #E0E0E0;
+        --bg-primary: #000000;
+        --bg-secondary: #1A1A1A;
+        --bg-tertiary: #2A2A2A;
+        --border-color: #4A4A4A;
+    }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Custom scrollbar for Firefox */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--bg-message) var(--bg-tertiary);
+}
+
+/* Focus styles for accessibility */
+*:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+/* Skip to content link for accessibility */
+.skip-link {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    background: var(--primary-color);
+    color: white;
+    padding: 8px;
+    text-decoration: none;
+    z-index: 100;
+}
+
+.skip-link:focus {
+    top: 0;
+}
+
+/* Print styles */
+@media print {
+    .sidebar,
+    .message-input-container,
+    .chat-actions,
+    .message-actions,
+    .modal,
+    .toast-container {
+        display: none !important;
+    }
+    
+    .chat-area {
+        width: 100% !important;
+    }
+    
+    .message {
+        page-break-inside: avoid;
+    }
+}
+
+/* Additional component styles that were missing */
+
+/* Date separator in messages */
+.date-separator {
+    display: flex;
+    align-items: center;
+    margin: 20px 0;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+}
+
+.date-separator::before,
+.date-separator::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border-color);
+}
+
+.date-separator span {
+    padding: 0 16px;
+}
+
+/* Message context menu */
+.context-menu {
+    position: fixed;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    padding: 8px 0;
+    min-width: 180px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    display: none;
+}
+
+.context-menu.active {
+    display: block;
+}
+
+.context-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.context-menu-item:hover {
+    background: var(--bg-tertiary);
+}
+
+.context-menu-item svg {
+    width: 16px;
+    height: 16px;
+    color: var(--text-secondary);
+}
+
+/* Voice message styles (future feature) */
+.voice-message {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius);
+}
+
+.voice-waveform {
+    flex: 1;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.voice-bar {
+    width: 3px;
+    background: var(--text-secondary);
+    border-radius: 2px;
+    transition: var(--transition);
+}
+
+.voice-duration {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
