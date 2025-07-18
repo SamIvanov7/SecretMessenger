@@ -1,15 +1,16 @@
-from fastapi import FastAPI, Depends, HTTPException, status, Header
+from fastapi import FastAPI, Depends, HTTPException, status, Header, WebSocket, WebSocketDisconnect, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict
 from datetime import datetime
 from passlib.context import CryptContext
 import jwt
 from jwt import PyJWTError
 import os
+import json
 
 from .database import engine, get_db
 from .models import Base, User, Chat, ChatParticipant, Message, Contact
@@ -32,6 +33,39 @@ ALGORITHM = "HS256"
 
 # Security
 security = HTTPBearer()
+
+# WebSocket connection manager
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: Dict[int, List[WebSocket]] = {}
+
+    async def connect(self, websocket: WebSocket, user_id: int):
+        await websocket.accept()
+        if user_id not in self.active_connections:
+            self.active_connections[user_id] = []
+        self.active_connections[user_id].append(websocket)
+
+    def disconnect(self, websocket: WebSocket, user_id: int):
+        if user_id in self.active_connections:
+            self.active_connections[user_id].remove(websocket)
+            if not self.active_connections[user_id]:
+                del self.active_connections[user_id]
+
+    async def send_to_user(self, user_id: int, message: dict):
+        if user_id in self.active_connections:
+            for connection in self.active_connections[user_id]:
+                try:
+                    await connection.send_json(message)
+                except:
+                    pass
+
+    async def send_to_chat(self, chat_id: int, message: dict, db: Session, exclude_user_id: int = None):
+        participants = db.query(ChatParticipant).filter(ChatParticipant.chat_id == chat_id).all()
+        for participant in participants:
+            if participant.user_id != exclude_user_id:
+                await self.send_to_user(participant.user_id, message)
+
+manager = ConnectionManager()
 
 app.add_middleware(
     CORSMiddleware,
@@ -234,7 +268,7 @@ def get_user_chats(db: Session = Depends(get_db), current_user: User = Depends(g
     return chats
 
 @app.post("/api/chats/{chat_id}/messages", response_model=MessageResponse)
-def send_message(chat_id: int, message: MessageCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def send_message(chat_id: int, message: MessageCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     # Verify user is a participant in the chat
     participant = db.query(ChatParticipant).filter(
         ChatParticipant.chat_id == chat_id,
@@ -253,6 +287,19 @@ def send_message(chat_id: int, message: MessageCreate, db: Session = Depends(get
     db.add(db_message)
     db.commit()
     db.refresh(db_message)
+    
+    # Send via WebSocket to all chat participants
+    await manager.send_to_chat(chat_id, {
+        "type": "message",
+        "chatId": chat_id,
+        "message": {
+            "id": db_message.id,
+            "sender_id": current_user.id,
+            "sender_username": current_user.username,
+            "content": db_message.content,
+            "created_at": db_message.created_at.isoformat()
+        }
+    }, db)
     
     return MessageResponse(
         id=db_message.id,
@@ -351,6 +398,109 @@ def remove_contact(contact_id: int, db: Session = Depends(get_db), current_user:
     db.commit()
     
     return {"message": "Contact removed successfully"}
+
+# WebSocket endpoint
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket, token: str = Query(...), db: Session = Depends(get_db)):
+    try:
+        # Verify token
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id: int = payload.get("sub")
+        if user_id is None:
+            await websocket.close(code=4001, reason="Invalid token")
+            return
+            
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            await websocket.close(code=4001, reason="User not found")
+            return
+            
+        # Connect
+        await manager.connect(websocket, user_id)
+        
+        try:
+            while True:
+                # Receive message
+                data = await websocket.receive_json()
+                message_type = data.get("type")
+                
+                if message_type == "message":
+                    # Handle new message
+                    chat_id = data.get("chatId")
+                    content = data.get("content")
+                    
+                    # Verify user is in chat
+                    participant = db.query(ChatParticipant).filter(
+                        ChatParticipant.chat_id == chat_id,
+                        ChatParticipant.user_id == user_id
+                    ).first()
+                    
+                    if not participant:
+                        await websocket.send_json({
+                            "type": "error",
+                            "message": "You are not a participant in this chat"
+                        })
+                        continue
+                    
+                    # Create message in DB
+                    db_message = Message(
+                        chat_id=chat_id,
+                        sender_id=user_id,
+                        content=content
+                    )
+                    db.add(db_message)
+                    db.commit()
+                    db.refresh(db_message)
+                    
+                    # Send to all chat participants
+                    await manager.send_to_chat(chat_id, {
+                        "type": "message",
+                        "chatId": chat_id,
+                        "message": {
+                            "id": db_message.id,
+                            "sender_id": user_id,
+                            "sender_username": user.username,
+                            "content": content,
+                            "created_at": db_message.created_at.isoformat()
+                        }
+                    }, db)
+                    
+                elif message_type == "typing":
+                    # Handle typing indicator
+                    chat_id = data.get("chatId")
+                    is_typing = data.get("isTyping", False)
+                    
+                    # Send to other chat participants
+                    await manager.send_to_chat(chat_id, {
+                        "type": "typing",
+                        "chatId": chat_id,
+                        "userId": user_id,
+                        "username": user.username,
+                        "isTyping": is_typing
+                    }, db, exclude_user_id=user_id)
+                    
+                elif message_type == "read":
+                    # Handle read receipt
+                    chat_id = data.get("chatId")
+                    message_id = data.get("messageId")
+                    
+                    # You could update read status in DB here
+                    # For now, just broadcast to chat participants
+                    await manager.send_to_chat(chat_id, {
+                        "type": "read",
+                        "chatId": chat_id,
+                        "messageId": message_id,
+                        "userId": user_id
+                    }, db, exclude_user_id=user_id)
+                    
+        except WebSocketDisconnect:
+            manager.disconnect(websocket, user_id)
+            
+    except PyJWTError:
+        await websocket.close(code=4001, reason="Invalid token")
+    except Exception as e:
+        print(f"WebSocket error: {e}")
+        manager.disconnect(websocket, user_id)
 
 @app.get("/api/users/search", response_model=List[UserSearchResponse])
 def search_users(username: str, db: Session = Depends(get_db)):
